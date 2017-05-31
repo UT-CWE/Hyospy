@@ -1,0 +1,35 @@
+/*
+ * File: state.c
+ * Author: Oliver B. Fringer
+ * Institution: Stanford University
+ * --------------------------------
+ * Contains functions that define and implement the equation of state for
+ * the density from the salinity, temperature, and pressure.
+ *
+ * Copyright (C) 2005-2006 The Board of Trustees of the Leland Stanford Junior 
+ * University. All Rights Reserved.
+ *
+ */
+#include "state.h"
+
+/*
+ * Function: StateEquation
+ * Usage: rho = StateEquation(prop,s,T,p);
+ * ---------------------------------------
+ * Returns the density as a function of temperature, salinity, and
+ * pressure, where pressure is the hydrostatic pressure p=RHO0*prop->grav*z,
+ * and RHO0 and prop->grav are defined in suntans.h.  Note that rho should
+ * always normalized by RHO0 so that this function returns a dimensionless
+ * quantity.
+ *
+ */
+REAL StateEquation(const propT *prop, const REAL s, const REAL T, const REAL p) {
+  const REAL s0=12.5;
+  const REAL T0=20.0;
+  // If temperature is a passive scalar
+  //  return -prop->gamma*T;
+  //return -prop->gamma*T;
+  return prop->beta*(s-s0) - prop->gamma*(T-T0);
+}
+
+
