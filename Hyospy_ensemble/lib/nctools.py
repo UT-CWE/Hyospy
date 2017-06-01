@@ -816,9 +816,9 @@ class cgrid():
         for an_att in v.ncattrs():
             self.atts['v'][an_att] = getattr(v,an_att) 
         
-        pdb.set_trace()
         self.data['u'] = u[t1:t2:ts,zindex,y1:y2:step,x1:x2:step]
         self.data['v'] = v[t1:t2:ts,zindex,y1:y2:step,x1:x2:step]
+
         
     def write_nc(self,ofn,is3d=False):
         """
@@ -862,7 +862,8 @@ class cgrid():
             if self.data['u'].shape[-2:] != lon_shape and \
                 self.data['u'].shape[-2:] != lon_shape_red:
                 raise Exception('Dimensions of u/v do not match grid variables')
-                        
+        
+	                
         x = self.data[lon_key].shape[1]
         y = self.data[lat_key].shape[0]
         
@@ -1033,8 +1034,13 @@ class roms(cgrid):
         else:
             y1 = yindex[0]; y2 = yindex[1]; step = yindex[2]
             x1 = xindex[0]; x2 = xindex[1]
-            self.data['lon_psi_ss'] = self.data['lon_psi'][y1:y2+1:step,x1:x2+1:step]
-            self.data['lat_psi_ss'] = self.data['lat_psi'][y1:y2+1:step,x1:x2+1:step]
+	    if y2==self.data['lon_psi'].shape[0] or x2==self.data['lon_psi'].shape[1]:
+            	## The larger index reach the maximum
+        	self.data['lon_psi_ss'] = self.data['lon_psi'][y1:y2+1:step,x1:x2:step]
+                self.data['lat_psi_ss'] = self.data['lat_psi'][y1:y2+1:step,x1:x2:step]
+	    else:
+            	self.data['lon_psi_ss'] = self.data['lon_psi'][y1:y2+1:step,x1:x2+1:step]
+            	self.data['lat_psi_ss'] = self.data['lat_psi'][y1:y2+1:step,x1:x2+1:step]
         
         u = self.Dataset.variables['u']
         self.atts['u'] = {}
@@ -1067,6 +1073,7 @@ class roms(cgrid):
         else:
             self.data['u'] = u_on_upts
             self.data['v'] = v_on_vpts
+
             
     
     def interp_and_rotate(self,u,v,is3d=False):
