@@ -28,6 +28,7 @@ class upper_wrapper(object):
 
     # Switches to different models
     hydro_model='BLENDED' # hydrodynamic model options: 'SUNTANS', 'ROMS', 'BLENDED'
+    hydro_run=True
 
     # ROMS data source
     ROMS_datasource='online'
@@ -86,57 +87,53 @@ class upper_wrapper(object):
         
         for i in range(self.number):
             
-            start = time.time()         
-            #### run SUNTANS ####
-#            hydro_wrapper.runSUNTANS(self.starttime, self.endtime, self.OBC_opt, self.IC_opt, ROMS_datasource=self.ROMS_datasource)
-	
-            ## Collect SUNTANS file
-            basedir = os.getcwd()
-            os.chdir(basedir+'/SUNTANS/rundata')
-            ncfiles = []
-            for ff in glob.glob("GalvCoarse_0*"):
-                ncfiles.append(ff)
-            os.chdir(basedir)
+            start = time.time()  
+	    print "Running simulation #%s !!\n"%str(i)
+       
+	    if self.hydro_run:
+                #### run SUNTANS ####
+                hydro_wrapper.runSUNTANS(self.starttime, self.endtime, self.OBC_opt, self.IC_opt, ROMS_datasource=self.ROMS_datasource)
             
-            SUNTANS_file = []
-            for f in ncfiles:
-                SUNTANS_file.append('%s/%s'%(basedir+'/SUNTANS/rundata', f))	
-            
-            ## Prepare for GNOME run
-            GNOME_dir = "GNOME/%s"%str(i)   
-            if os.path.exists(GNOME_dir):
-                shutil.rmtree(GNOME_dir)
-            os.makedirs(GNOME_dir)
-                
-            SUNTANS_out = '%s/txsuntans.nc'%GNOME_dir
-            oilspill_wrapper.init_model(i, opt='SUNTANS')
-            oilspill_wrapper.Tx_SUNTANS(SUNTANS_file, SUNTANS_out)
-        	
-            print "Forecast simulation, downloading TAMU-NCEP wind !!!\n"
-            subset_wind = True
-            TNW = TAMU_NCEP_wind(subset_wind)
-            TNW.writeGNOME('%s/wind.nc'%GNOME_dir) 
-            
- 
-            #### run GNOME ####
+                   
             if self.runGNOME:
+		
+		## Collect SUNTANS file
+                basedir = os.getcwd()
+                os.chdir(basedir+'/SUNTANS/rundata')
+                ncfiles = []
+                for ff in glob.glob("GalvCoarse_0*"):
+                    ncfiles.append(ff)
+                os.chdir(basedir)
+            
+                SUNTANS_file = []
+                for f in ncfiles:
+                    SUNTANS_file.append('%s/%s'%(basedir+'/SUNTANS/rundata', f))
+
+		## Prepare for GNOME run
+                GNOME_dir = "GNOME/%s"%str(i)   
+                if os.path.exists(GNOME_dir):
+                    shutil.rmtree(GNOME_dir)
+                os.makedirs(GNOME_dir)
+                
+                SUNTANS_out = '%s/txsuntans.nc'%GNOME_dir
+                oilspill_wrapper.init_model(i, opt='SUNTANS')
+                oilspill_wrapper.Tx_SUNTANS(SUNTANS_file, SUNTANS_out)
+        	
+                print "Forecast simulation, downloading TAMU-NCEP wind !!!\n"
+                subset_wind = True
+                TNW = TAMU_NCEP_wind(subset_wind)
+                TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
+
                 print 'running GNOME !!!\n'
                 oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime, self.period, 900, opt='SUNTANS')
                 oilspill_wrapper.GNOME_GM_visualization(i, opt='SUNTANS')
                 oilspill_wrapper.GNOME_GE_animation(i, self.starttime, opt='SUNTANS')
                 
+	    #### pause a while for new data to be available ####
             end = time.time()
-            simulation_time = int(end-start)            
-            #### pause a while for new data to come in ####
-            if i != self.number-1:
-                sleep_time = self.interval - simulation_time
-                for j in xrange(int(sleep_time/60.)*60, 0, -60):
-                    mm = j/60
-                    print 'Starting new simulation in %d minutes ...'%mm
-                    time.sleep(60)            
-                #time.sleep(self.interval-simulation_time)
+            timer(start, end, i, self.number, self.interval)
                          
-        if self.probability_map:
+        if self.runGNOME and self.probability_map:
             oilspill_wrapper.ensemble_combination(self.number, opt='SUNTANS')
             print 'creating probability map!!!\n'
             bbox=[-95.22,-94.44,28.80,29.85] # the map range
@@ -155,49 +152,47 @@ class upper_wrapper(object):
         for i in range(self.number):
             
             start = time.time()
-            #### download ROMS ####
-            print "Running simulation #%s !!\n"%str(i)
-#            downloadROMS(self.starttime, self.endtime, self.ROMS_datasource, ROMSsrc='forecast')
+	    print "Running simulation #%s !!\n"%str(i)
+
+	    if self.hydro_run:
+                #### download ROMS ####    
+                downloadROMS(self.starttime, self.endtime, self.ROMS_datasource, ROMSsrc='forecast')
             
-            ## Prepare for GNOME run
-            GNOME_dir = "GNOME/%s"%str(i)   
-            if os.path.exists(GNOME_dir):
-                shutil.rmtree(GNOME_dir)
-            os.makedirs(GNOME_dir)
+
+            if self.runGNOME:		
+		## Prepare for GNOME run
+                GNOME_dir = "GNOME/%s"%str(i)   
+                if os.path.exists(GNOME_dir):
+                    shutil.rmtree(GNOME_dir)
+                os.makedirs(GNOME_dir)
             
-            ROMS_file='DATA/txla_subset_HIS.nc'    
-            ROMS_out = '%s/hiroms_ss_rho.nc'%GNOME_dir
-            oilspill_wrapper.init_model(i, opt='ROMS')
-            oilspill_wrapper.HIROMS(ROMS_file, ROMS_out) 
+                ROMS_file='DATA/txla_subset_HIS.nc'    
+                ROMS_out = '%s/hiroms_ss_rho.nc'%GNOME_dir
+                oilspill_wrapper.init_model(i, opt='ROMS')
+                oilspill_wrapper.HIROMS(ROMS_file, ROMS_out) 
             
-            #### wind ####
-            print "Forecast simulation, downloading TAMU-NCEP wind !!!\n"
-            subset_wind = False
-            TNW = TAMU_NCEP_wind(subset_wind)
-            TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
-            
-            #### run GNOME ####
-            if self.runGNOME:
+                #### wind ####
+                print "Forecast simulation, downloading TAMU-NCEP wind !!!\n"
+                subset_wind = False
+                TNW = TAMU_NCEP_wind(subset_wind)
+                TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
+
                 print 'running GNOME !!!\n'
                 oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime, self.period, 900, opt='ROMS')
                 oilspill_wrapper.GNOME_GM_visualization(i, opt='ROMS')
                 oilspill_wrapper.GNOME_GE_animation(i, self.starttime, opt='ROMS')
+
         
             #### run TracPy ####
             if self.runTracPy:
                 print 'running TracPy !!!\n'
                 oilspill_wrapper.TRACPY(utm_x, utm_y, self.starttime, self.period, opt='ROMS')
             
+
+	    ##### pause a while for new data to be available ####
             ## timer
             end = time.time()
-            simulation_time = int(end-start)
-            #### pause a while for new data to come in ####
-            if i != self.number-1:
-                sleep_time = self.interval - simulation_time
-                for j in xrange(int(sleep_time/60.)*60, 0, -60):
-                    mm = j/60
-                    print 'Starting new simulation in %d minutes ...'%mm
-                    time.sleep(60)
+	    timer(start, end, i, self.number, self.interval)
                 
         
         #### probability map ####
@@ -220,62 +215,60 @@ class upper_wrapper(object):
             start = time.time()
             print "Running simulation #%s !!\n"%str(i)
 
-            ## Step One: run SUNTANS
-#            hydro_wrapper.runSUNTANS(self.starttime, self.endtime, 'ROMSFILE', 'ROMS', ROMS_datasource=self.ROMS_datasource)
+	    if self.hydro_run:
+            	## Step One: run SUNTANS
+	        hydro_wrapper.runSUNTANS(self.starttime, self.endtime, 'ROMSFILE', 'ROMS', ROMS_datasource=self.ROMS_datasource)
 	
-            ## Step Two: Blend SUNTANS and ROMS
-#            BL = blend(self.starttime, self.endtime)
-#            BL.model_velocity()
+            	## Step Two: Blend SUNTANS and ROMS
+	        BL = blend(self.starttime, self.endtime)
+                BL.model_velocity()
             
-            ## Prepare for GNOME run
-            GNOME_dir = "GNOME/%s"%str(i)   
-            if os.path.exists(GNOME_dir):
-                shutil.rmtree(GNOME_dir)
-            os.makedirs(GNOME_dir)
-
-            blended_file = 'DATA/blended_uv.nc'
-            blended_out = '%s/hiroms_ss_rho.nc'%GNOME_dir
-            oilspill_wrapper.init_model(i, opt='blended')
-            oilspill_wrapper.HIROMS(blended_file, blended_out, subset=self.gnome_subset, bbox=self.gnome_bbox)
-            
-            ## GNOME wind 
-            print "Forecast simulation, downloading TAMU-NCEP wind !!!\n"
-            subset_wind = False
-            TNW = TAMU_NCEP_wind(subset_wind)
-            TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
-            
+                        
             ## Step Three: run GNOME
-            if self.runGNOME:        
+            if self.runGNOME: 
+		## Prepare for GNOME run
+                GNOME_dir = "GNOME/%s"%str(i)   
+                if os.path.exists(GNOME_dir):
+                    shutil.rmtree(GNOME_dir)
+                os.makedirs(GNOME_dir)
+
+                blended_file = 'DATA/blended_uv.nc'
+                blended_out = '%s/hiroms_ss_rho.nc'%GNOME_dir
+                oilspill_wrapper.init_model(i, opt='blended')
+                oilspill_wrapper.HIROMS(blended_file, blended_out, subset=self.gnome_subset, bbox=self.gnome_bbox)
+            
+                ## GNOME wind 
+                print "Forecast simulation, downloading TAMU-NCEP wind !!!\n"
+                subset_wind = False
+                TNW = TAMU_NCEP_wind(subset_wind)
+                TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
+       
                 print 'running GNOME !!!\n'
                 oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime, self.period, 900, opt='blended')
                 oilspill_wrapper.GNOME_GM_visualization(i, opt='blended')
                 oilspill_wrapper.GNOME_GE_animation(i, self.starttime, opt='blended')
+
           
-            #### run TracPy ####
+            #### Step Four: run TracPy ####
             if self.runTracPy:
                 print 'running TracPy !!!\n'
                 oilspill_wrapper.TRACPY(utm_x, utm_y, self.starttime, self.period, opt='blended')
+
         
+	    #### pause a while for new data to be available ####
             ## timer
             end = time.time()
-            simulation_time = int(end-start)
-            #### pause a while for new data to come in ####
-            if i != self.number-1:
-                sleep_time = self.interval - simulation_time
-                for j in xrange(int(sleep_time/60.)*60, 0, -60):
-                    mm = j/60
-                    print 'Starting new simulation in %d minutes ...'%mm
-                    time.sleep(60)        
+            timer(start, end, i, self.number, self.interval)        
         
 
-        if self.probability_map:
+        if self.runGNOME and self.probability_map:
             oilspill_wrapper.ensemble_combination(self.number, opt='blended')
             print 'creating probability map!!!\n'
             bbox=[-95.97,-94.025,27.24,29.89] # the map range
             Pmap('GNOME_combined.nc', 400, 400, self.starttime, bbox, self.mpl, self.google_earth)
 	    
     
-def timer(start, end, number, interval):
+def timer(start, end, i, number, interval):
     """
     pause time
     """

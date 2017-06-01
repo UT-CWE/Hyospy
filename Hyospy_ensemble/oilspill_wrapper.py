@@ -206,6 +206,9 @@ def TRACPY(utm_x, utm_y, starttime, period, opt='ROMS'):
     else:
         raise IOError('Change TracPy Option !!')
     
+    
+    starttime = datetime.strftime(datetime.strptime(starttime, '%Y-%m-%d-%H') + timedelta(hours=1.1), \
+			'%Y-%m-%d-%H')    ## consistent with SUNTANS starttime
     ## starttime
     date = datetime.strptime(starttime, '%Y-%m-%d-%H')
     ## running period
