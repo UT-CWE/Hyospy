@@ -38,6 +38,10 @@ class upper_wrapper(object):
     runGNOME=False
     runTracPy=False
 
+    ## GNOME settings
+    gnome_subset=False
+    gnome_bbox=None
+
     probability_map=False
     google_earth=False
     mpl = 8
@@ -84,7 +88,7 @@ class upper_wrapper(object):
             
             start = time.time()         
             #### run SUNTANS ####
-#            hydro_wrapper.runSUNTANS(self.starttime, self.endtime, self.OBC_opt, self.IC_opt)
+#            hydro_wrapper.runSUNTANS(self.starttime, self.endtime, self.OBC_opt, self.IC_opt, ROMS_datasource=self.ROMS_datasource)
 	
             ## Collect SUNTANS file
             basedir = os.getcwd()
@@ -153,7 +157,7 @@ class upper_wrapper(object):
             start = time.time()
             #### download ROMS ####
             print "Running simulation #%s !!\n"%str(i)
-            downloadROMS(self.starttime, self.endtime, self.ROMS_datasource, ROMSsrc='forecast')
+#            downloadROMS(self.starttime, self.endtime, self.ROMS_datasource, ROMSsrc='forecast')
             
             ## Prepare for GNOME run
             GNOME_dir = "GNOME/%s"%str(i)   
@@ -197,7 +201,7 @@ class upper_wrapper(object):
                 
         
         #### probability map ####
-        if self.probability_map:
+        if self.runGNOME and self.probability_map:
             oilspill_wrapper.ensemble_combination(self.number, opt='ROMS')
             print 'creating probability map!!!\n'
             bbox=[-95.97,-94.025,27.24,29.89] # the map range
@@ -217,11 +221,11 @@ class upper_wrapper(object):
             print "Running simulation #%s !!\n"%str(i)
 
             ## Step One: run SUNTANS
-            hydro_wrapper.runSUNTANS(self.starttime, self.endtime, 'ROMSFILE', 'ROMS')
+#            hydro_wrapper.runSUNTANS(self.starttime, self.endtime, 'ROMSFILE', 'ROMS', ROMS_datasource=self.ROMS_datasource)
 	
             ## Step Two: Blend SUNTANS and ROMS
-            BL = blend(self.starttime, self.endtime)
-            BL.model_velocity()
+#            BL = blend(self.starttime, self.endtime)
+#            BL.model_velocity()
             
             ## Prepare for GNOME run
             GNOME_dir = "GNOME/%s"%str(i)   
@@ -232,7 +236,7 @@ class upper_wrapper(object):
             blended_file = 'DATA/blended_uv.nc'
             blended_out = '%s/hiroms_ss_rho.nc'%GNOME_dir
             oilspill_wrapper.init_model(i, opt='blended')
-            oilspill_wrapper.HIROMS(blended_file, blended_out)
+            oilspill_wrapper.HIROMS(blended_file, blended_out, subset=self.gnome_subset, bbox=self.gnome_bbox)
             
             ## GNOME wind 
             print "Forecast simulation, downloading TAMU-NCEP wind !!!\n"
@@ -271,6 +275,20 @@ class upper_wrapper(object):
             Pmap('GNOME_combined.nc', 400, 400, self.starttime, bbox, self.mpl, self.google_earth)
 	    
     
+def timer(start, end, number, interval):
+    """
+    pause time
+    """
+    simulation_time = int(end-start)
+    #### Start pausing ####
+    if i!= number-1:
+        sleep_time = interval - simulation_time
+        for j in xrange(int(sleep_time/60.)*60, 0, -60):
+            mm = j/60
+            print 'Starting new simulation in %d minutes ...'%mm
+            time.sleep(60) 
+	
+
 
 
 

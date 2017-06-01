@@ -134,7 +134,7 @@ def Tx_SUNTANS(infile,outfile):
     txsuntans.Dataset.close()
     
 
-def HIROMS(infile,outfile):
+def HIROMS(infile,outfile, subset=False, bbox=[28.17,-95.53,30.0,-94.25]):
     
     '''
     Sample script to retrieve data from Arakawa c-grid type model
@@ -152,16 +152,29 @@ def HIROMS(infile,outfile):
     
     #Only download last five timesteps
     ti=[0,len(hiroms.data['time']),1]
+
+    if subset:
+	# this case interpolates to rho grid and reduces lon/lat size
+   	# (compatible with GNOME at present)
+	hiroms.subset(bbox,lat='lat_psi',lon='lon_psi')
+        hiroms.get_grid_info(xindex=hiroms.x,yindex=hiroms.y)
+        hiroms.get_data(var_map,tindex=ti,xindex=hiroms.x,yindex=hiroms.y)
+        hiroms.reduce_latlon_mesh_for_GNOME()
+        ofn = os.path.join(data_files_dir,outfile)
+        hiroms.data['lon_ss'] = hiroms.data['lon_psi_ss']
+        hiroms.data['lat_ss'] = hiroms.data['lat_psi_ss']
+        hiroms.write_nc(ofn,is3d=False)
     
-    #u/v interpolated to rho grid, u/v and lat/lon the same size (works in current GNOME)
-    print 'converting ROMS output to GNOME current input file!!!'
-    hiroms.get_grid_info()
-    hiroms.get_data(var_map,tindex=ti)
-    hiroms.reduce_latlon_mesh_for_GNOME()
-    ofn = os.path.join(data_files_dir,outfile)
-    hiroms.data['lon'] = hiroms.data['lon_psi']
-    hiroms.data['lat'] = hiroms.data['lat_psi']
-    hiroms.write_nc(ofn,is3d=False)
+    else:
+        #u/v interpolated to rho grid, u/v and lat/lon the same size (works in current GNOME)
+        print 'converting ROMS output to GNOME current input file!!!'
+        hiroms.get_grid_info()
+        hiroms.get_data(var_map,tindex=ti)
+        hiroms.reduce_latlon_mesh_for_GNOME()
+        ofn = os.path.join(data_files_dir,outfile)
+        hiroms.data['lon'] = hiroms.data['lon_psi']
+        hiroms.data['lat'] = hiroms.data['lat_psi']
+        hiroms.write_nc(ofn,is3d=False)
 
 def TRACPY(utm_x, utm_y, starttime, period, opt='ROMS'):
     """
