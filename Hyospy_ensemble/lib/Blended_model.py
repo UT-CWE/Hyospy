@@ -10,7 +10,7 @@ import utm
 import string
 import os
 import glob
-from datetime import datetime
+from datetime import datetime, timedelta
 from matplotlib.collections import PolyCollection
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -28,6 +28,10 @@ class blend(object):
 
     def __init__(self, starttime, endtime, **kwargs):
         self.__dict__.update(kwargs)
+
+	#### SUNTANS simulation starts at one o'clock ####
+	#### increase the starttime by one hour to make two model has the same starttime ####
+	starttime = datetime.strftime( datetime.strptime(starttime,'%Y-%m-%d-%H')+timedelta(hours=1), '%Y-%m-%d-%H')
         
         timelims = (starttime.replace("-", "")+'0000', endtime.replace("-", "")+'0000')
 
