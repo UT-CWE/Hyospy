@@ -58,10 +58,14 @@ class upper_wrapper(object):
         
         self.__dict__.update(kwargs)
     
-    def __call__(self,starttime, endtime, period, init_latlon=[28.353786, -95.315109]):
+    def __call__(self,starttime, endtime, starttime2, period, init_latlon=[28.353786, -95.315109]):
 
+	## hydrodynamic time
         self.starttime = starttime
         self.endtime = endtime
+	
+	## oil spill time
+	self.starttime2 = starttime2
         self.period = period
         self.init_latlon = init_latlon
     	
@@ -125,9 +129,9 @@ class upper_wrapper(object):
                 TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
 
                 print 'running GNOME !!!\n'
-                oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime, self.period, 900, opt='SUNTANS')
+                oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime2, self.period, 900, opt='SUNTANS')
                 oilspill_wrapper.GNOME_GM_visualization(i, opt='SUNTANS')
-                oilspill_wrapper.GNOME_GE_animation(i, self.starttime, opt='SUNTANS')
+                oilspill_wrapper.GNOME_GE_animation(i, self.starttime2, opt='SUNTANS')
                 
 	    #### pause a while for new data to be available ####
             end = time.time()
@@ -137,7 +141,7 @@ class upper_wrapper(object):
             oilspill_wrapper.ensemble_combination(self.number, opt='SUNTANS')
             print 'creating probability map!!!\n'
             bbox=[-95.22,-94.44,28.80,29.85] # the map range
-            Pmap('GNOME_combined.nc', 400, 400, self.starttime, bbox, self.mpl, self.google_earth)
+            Pmap('GNOME_combined.nc', 400, 400, self.starttime2, bbox, self.mpl, self.google_earth)
 	    
     
 
@@ -178,15 +182,15 @@ class upper_wrapper(object):
                 TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
 
                 print 'running GNOME !!!\n'
-                oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime, self.period, 900, opt='ROMS')
+                oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime2, self.period, 900, opt='ROMS')
                 oilspill_wrapper.GNOME_GM_visualization(i, opt='ROMS')
-                oilspill_wrapper.GNOME_GE_animation(i, self.starttime, opt='ROMS')
+                oilspill_wrapper.GNOME_GE_animation(i, self.starttime2, opt='ROMS')
 
         
             #### run TracPy ####
             if self.runTracPy:
                 print 'running TracPy !!!\n'
-                oilspill_wrapper.TRACPY(utm_x, utm_y, self.starttime, self.period, opt='ROMS')
+                oilspill_wrapper.TRACPY(utm_x, utm_y, self.starttime2, self.period, opt='ROMS')
             
 
 	    ##### pause a while for new data to be available ####
@@ -200,7 +204,7 @@ class upper_wrapper(object):
             oilspill_wrapper.ensemble_combination(self.number, opt='ROMS')
             print 'creating probability map!!!\n'
             bbox=[-95.97,-94.025,27.24,29.89] # the map range
-            Pmap('GNOME_combined.nc', 400, 400, self.starttime, bbox, self.mpl, self.google_earth)
+            Pmap('GNOME_combined.nc', 400, 400, self.starttime2, bbox, self.mpl, self.google_earth)
             
 
    
@@ -244,15 +248,15 @@ class upper_wrapper(object):
                 TNW.writeGNOME('%s/wind.nc'%GNOME_dir)
        
                 print 'running GNOME !!!\n'
-                oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime, self.period, 900, opt='blended')
+                oilspill_wrapper.run_mul_GNOME(i, utm_x, utm_y, self.starttime2, self.period, 900, opt='blended')
                 oilspill_wrapper.GNOME_GM_visualization(i, opt='blended')
-                oilspill_wrapper.GNOME_GE_animation(i, self.starttime, opt='blended')
+                oilspill_wrapper.GNOME_GE_animation(i, self.starttime2, opt='blended')
 
           
             #### Step Four: run TracPy ####
             if self.runTracPy:
                 print 'running TracPy !!!\n'
-                oilspill_wrapper.TRACPY(utm_x, utm_y, self.starttime, self.period, opt='blended')
+                oilspill_wrapper.TRACPY(utm_x, utm_y, self.starttime2, self.period, opt='blended')
 
         
 	    #### pause a while for new data to be available ####
@@ -265,7 +269,7 @@ class upper_wrapper(object):
             oilspill_wrapper.ensemble_combination(self.number, opt='blended')
             print 'creating probability map!!!\n'
             bbox=[-95.97,-94.025,27.24,29.89] # the map range
-            Pmap('GNOME_combined.nc', 400, 400, self.starttime, bbox, self.mpl, self.google_earth)
+            Pmap('GNOME_combined.nc', 400, 400, self.starttime2, bbox, self.mpl, self.google_earth)
 	    
     
 def timer(start, end, i, number, interval):
