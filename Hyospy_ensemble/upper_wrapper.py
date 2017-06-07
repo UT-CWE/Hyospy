@@ -189,8 +189,19 @@ class upper_wrapper(object):
         
             #### run TracPy ####
             if self.runTracPy:
+                ## create TracPy directory
+	        TRACPY_dir = 'TRACPY/%s'%str(i)
+        	if os.path.exists(TRACPY_dir):
+                    shutil.rmtree(TRACPY_dir)
+                os.makedirs(TRACPY_dir)
+ 
+        	## move files
+        	oilspill_wrapper.init_tracpy(i)
+		
+		## run TracPy
                 print 'running TracPy !!!\n'
-                oilspill_wrapper.TRACPY(utm_x, utm_y, self.starttime2, self.period, opt='ROMS')
+                oilspill_wrapper.TRACPY(i, utm_x, utm_y, self.starttime2, self.period, opt='ROMS')
+		oilspill_wrapper.TRACPY_GM_visualization(i, opt='ROMS')
             
 
 	    ##### pause a while for new data to be available ####

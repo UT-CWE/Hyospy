@@ -176,7 +176,7 @@ def HIROMS(infile,outfile, subset=False, bbox=[28.17,-95.53,30.0,-94.25]):
         hiroms.data['lat'] = hiroms.data['lat_psi']
         hiroms.write_nc(ofn,is3d=False)
 
-def TRACPY(utm_x, utm_y, starttime, period, opt='ROMS'):
+def TRACPY(nn, utm_x, utm_y, starttime, period, opt='ROMS'):
     """
     run tracpy drifter model
     """
@@ -184,22 +184,22 @@ def TRACPY(utm_x, utm_y, starttime, period, opt='ROMS'):
     import tracpy.plotting
     from tracpy.tracpy_class import Tracpy
 
-    tracpy_dir = 'TRACPY'
+    tracpy_dir = 'TRACPY/%s'%str(nn)
     if not os.path.exists(tracpy_dir):
         os.makedirs(tracpy_dir) 
 
     basedir = os.getcwd()
-    os.chdir(basedir+'/TRACPY/')
+    os.chdir(basedir+'/TRACPY/%s'%str(nn))
         
     if opt == 'ROMS':
-        loc = '../DATA/txla_subset_HIS.nc'
-        loc2 = '../DATA/txla_subset_HIS.nc'  ## grid
+        loc = '../../DATA/txla_subset_HIS.nc'
+        loc2 = '../../DATA/txla_subset_HIS.nc'  ## grid
         num_layers = 30
         zpar = 29  # vertical layer
 
     elif opt == 'blended':
-        loc = '../DATA/blended_uv.nc'
-        loc2 = '../DATA/blended_uv.nc'  ## grid
+        loc = '../../DATA/blended_uv.nc'
+        loc2 = '../../DATA/blended_uv.nc'  ## grid
         num_layers = 1
         zpar = 0  # vertical layer
 
@@ -298,7 +298,25 @@ def init_model(nn, opt='SUNTANS'):
         f.close()
     else:
         raise IOError('No such option, check input for init_model')
+
         
+def init_tracpy(nn):
+    """
+    This function moves necessary files for a TracPy run into the TRACPY folder
+    Google map txt file: javascript.txt
+    KML file: GE_animation.txt
+    """
+ 
+    data_dir = os.getcwd() + '/DATA/'
+    TRACPY_dir = os.getcwd() + '/TRACPY/%s/'%str(nn)
+     
+    filelist=['GE_animation.txt', 'javascript.txt']
+    try:
+        for ff in filelist:
+            FileTool.move_file(data_dir+ff, TRACPY_dir)
+    except:
+        raise Exception, 'No target directory called:\n%s or necessary file missing in folder /DATA/'%TRACPY_dir
+
     
 def make_model(coor, starttime, period=46, dt=900 ,opt='SUNTANS', images_dir=os.getcwd()+"/images"):
     '''
@@ -468,6 +486,104 @@ def GNOME_GE_animation(nn,starttime,opt='SUNTANS'):
     row.append('</Document>'+'\n'+'</kml>')    
       
     h=open(base_dir+'/GNOME_GE.kml','w')
+    for l in row:
+        g=''.join([str(j) for j in l])
+        h.write(g+'\n')
+    h.close
+
+
+def TRACPY_GM_visualization(nn, opt='ROMS'):
+     
+    """
+    Visualize different TracPy oil spill trajectories on 2D Google Map GIS;
+    number --- set up how many set of GNOME outputs to visualize
+    opt = 'ROMS' or 'blended'
+    """
+  
+    locations=[]
+ 
+    print "Generating different oil spill tracks (TracPy) on Google Map"
+     
+     
+    #base_dir=os.getcwd()+'/GNOME/%s/'%str(nn)
+    base_dir = os.getcwd() + '/TRACPY/%s/'%str(nn)
+     
+    a = Dataset(base_dir+'tracks/tracpy_%s.nc'%opt, 'r')
+ 
+    lon = a.variables['lonp'][:]
+    lat = a.variables['latp'][:]
+    (ntrac, nt) = lon.shape
+ 
+    nall = ntrac*nt  # the number of all particles
+    lon = lon.reshape(nall)
+    lat = lat.reshape(nall)
+ 
+         
+    for j in range(nall):
+    	locations.append([lat[j], lon[j]])
+    
+    if opt=='ROMS' or opt=='blended':
+        f=open(base_dir+'/javascript.txt','r')
+        content=f.readlines()
+        os.remove(base_dir+'/javascript.txt')
+        open(base_dir+'/javascript.txt','w').write('')
+        h=open(base_dir+'/javascript.txt','w')
+        for line in content:
+            h.write(line.replace('zoom: 12','zoom: 9').replace('(29.51, -94.84)','(29.031161, -94.574199)'))
+        h.close()
+     
+    file1 = open(base_dir+'/javascript.txt','r')     # open the javascript
+    row=[]
+    for s in file1.readlines():        
+        row.append(s)
+ 
+    row[11]='    '+'var'+' '+'locations'+'='+str(locations) + '\n' 
+     
+    h=open(base_dir+'/TracPy_Google_map.html','w')
+    for l in row:
+        g=''.join([str(j) for j in l])     
+        h.write(g+'\n')
+    h.close
+
+def TRACPY_GE_animation(nn,starttime,opt='ROMS'):
+     
+    '''
+    Animate different TracPy oil spill trajectories on 3D Google Earth GIS
+    under developing
+    '''
+ 
+    base_dir=os.getcwd()+'/TRACPY/%s/'%str(nn)
+     
+    a=Dataset(base_dir+'tracks/tracpy_%s.nc'%opt,'r')
+ 
+    ## location data
+    lon = a.variables['lonp'][:]
+    lat = a.variables['latp'][:]
+    (ntrac, nt) = lon.shape
+ 
+    ## time info
+    time = a.variables['time']
+    t = num2date(time[:], time.units)
+    start_time = t[0]
+    yr = start_time.year
+    month = start_time.month
+    day = start_time.day
+         
+    file1 = open(base_dir+'/GE_animation.txt','r')     
+    row=[]
+    for s in file1.readlines():     
+        row.append(s)
+             
+    print "Generating multiple oil spill tracks (TracPy) on 3D Google Earth"
+     
+    for n in range(nt):   
+     
+        for j in range(ntrac):      
+                  
+            row.append('  <Placemark>'+'\n'+'    <TimeStamp>'+'\n'+'      <when>'+str(yr)+'-'+str('%02d' % month)+'-'+str('%02d' % (day+n/96))+'T'+ str("%02d" % ((n/4)%24))+':' +str("%02d" %((n*15)%60))+':00Z</when>'+'\n'+'    </TimeStamp>'+'\n'+'    <styleUrl>#'+str(1)+'</styleUrl>'+'\n'+'    <Point>'+'\n'+'      <coordinates>'+str(lon[j,n])+','+str(lat[j,n])+'</coordinates>'+'\n'+'    </Point>'+'\n'+'  </Placemark>'+'\n')    
+    row.append('</Document>'+'\n'+'</kml>')    
+       
+    h=open(base_dir+'/TracPy_GE.kml','w')
     for l in row:
         g=''.join([str(j) for j in l])
         h.write(g+'\n')
