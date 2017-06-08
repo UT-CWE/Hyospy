@@ -465,10 +465,6 @@ def GNOME_GE_animation(nn,starttime,opt='SUNTANS'):
 
     time = a.variables['time']
     t = num2date(time[:], time.units)
-    start_time = t[0]
-    yr = start_time.year
-    month = start_time.month
-    day = start_time.day
         
     file1 = open(base_dir+'/GE_animation.txt','r')     
     row=[]
@@ -476,13 +472,14 @@ def GNOME_GE_animation(nn,starttime,opt='SUNTANS'):
         row.append(s)
         
     nt=len(a.variables[u'time'][:])   #  nt is the total time steps
-
+	
     print "Generating multiple oil spill tracks (GNOME) on 3D Google Earth"
     
     for n in range(nt):   
     
-        for j in range(np*n,np*(n+1)):                       
-            row.append('  <Placemark>'+'\n'+'    <TimeStamp>'+'\n'+'      <when>'+str(yr)+'-'+str('%02d' % month)+'-'+str('%02d' % (day+n/96))+'T'+ str("%02d" % ((n/4)%24))+':' +str("%02d" %((n*15)%60))+':00Z</when>'+'\n'+'    </TimeStamp>'+'\n'+'    <styleUrl>#'+str(1)+'</styleUrl>'+'\n'+'    <Point>'+'\n'+'      <coordinates>'+str(a.variables[u'longitude'][j])+','+str(a.variables[u'latitude'][j])+'</coordinates>'+'\n'+'    </Point>'+'\n'+'  </Placemark>'+'\n')    
+        for j in range(np*n,np*(n+1)):           
+            
+            row.append('  <Placemark>'+'\n'+'    <TimeStamp>'+'\n'+'      <when>'+str(t[n].year)+'-'+str('%02d' % t[n].month)+'-'+str('%02d' % t[n].day)+'T'+ str("%02d" % t[n].hour)+':' +str("%02d" %t[n].minute)+':00Z</when>'+'\n'+'    </TimeStamp>'+'\n'+'    <styleUrl>#'+str(1)+'</styleUrl>'+'\n'+'    <Point>'+'\n'+'      <coordinates>'+str(a.variables[u'longitude'][j])+','+str(a.variables[u'latitude'][j])+'</coordinates>'+'\n'+'    </Point>'+'\n'+'  </Placemark>'+'\n')     
     row.append('</Document>'+'\n'+'</kml>')    
       
     h=open(base_dir+'/GNOME_GE.kml','w')
@@ -562,12 +559,8 @@ def TRACPY_GE_animation(nn,starttime,opt='ROMS'):
     (ntrac, nt) = lon.shape
  
     ## time info
-    time = a.variables['time']
-    t = num2date(time[:], time.units)
-    start_time = t[0]
-    yr = start_time.year
-    month = start_time.month
-    day = start_time.day
+    time = a.variables['tp']
+    t = num2date(time[0,:], time.units)
          
     file1 = open(base_dir+'/GE_animation.txt','r')     
     row=[]
@@ -575,12 +568,13 @@ def TRACPY_GE_animation(nn,starttime,opt='ROMS'):
         row.append(s)
              
     print "Generating multiple oil spill tracks (TracPy) on 3D Google Earth"
-     
+    
     for n in range(nt):   
-     
+     	
         for j in range(ntrac):      
-                  
-            row.append('  <Placemark>'+'\n'+'    <TimeStamp>'+'\n'+'      <when>'+str(yr)+'-'+str('%02d' % month)+'-'+str('%02d' % (day+n/96))+'T'+ str("%02d" % ((n/4)%24))+':' +str("%02d" %((n*15)%60))+':00Z</when>'+'\n'+'    </TimeStamp>'+'\n'+'    <styleUrl>#'+str(1)+'</styleUrl>'+'\n'+'    <Point>'+'\n'+'      <coordinates>'+str(lon[j,n])+','+str(lat[j,n])+'</coordinates>'+'\n'+'    </Point>'+'\n'+'  </Placemark>'+'\n')    
+                   
+            row.append('  <Placemark>'+'\n'+'    <TimeStamp>'+'\n'+'      <when>'+str(t[n].year)+'-'+str('%02d' % t[n].month)+'-'+str('%02d' % t[n].day)+'T'+ str("%02d" % t[n].hour)+':' +str("%02d" %t[n].minute)+':00Z</when>'+'\n'+'    </TimeStamp>'+'\n'+'    <styleUrl>#'+str(1)+'</styleUrl>'+'\n'+'    <Point>'+'\n'+'      <coordinates>'+str(lon[j,n])+','+str(lat[j,n])+'</coordinates>'+'\n'+'    </Point>'+'\n'+'  </Placemark>'+'\n')    
+
     row.append('</Document>'+'\n'+'</kml>')    
        
     h=open(base_dir+'/TracPy_GE.kml','w')

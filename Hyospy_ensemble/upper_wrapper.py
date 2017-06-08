@@ -202,6 +202,7 @@ class upper_wrapper(object):
                 print 'running TracPy !!!\n'
                 oilspill_wrapper.TRACPY(i, utm_x, utm_y, self.starttime2, self.period, opt='ROMS')
 		oilspill_wrapper.TRACPY_GM_visualization(i, opt='ROMS')
+		oilspill_wrapper.TRACPY_GE_animation(i, self.starttime2, opt='ROMS')
             
 
 	    ##### pause a while for new data to be available ####
@@ -279,6 +280,7 @@ class upper_wrapper(object):
                 print 'running TracPy !!!\n'
                 oilspill_wrapper.TRACPY(i, utm_x, utm_y, self.starttime2, self.period, opt='blended')
 		oilspill_wrapper.TRACPY_GM_visualization(i, opt='blended')
+		oilspill_wrapper.TRACPY_GE_animation(i, self.starttime2, opt='blended')
         
 	    #### pause a while for new data to be available ####
             ## timer
