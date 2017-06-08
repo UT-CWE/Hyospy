@@ -98,7 +98,27 @@ choose to subset the grid for GNOME simulation by choosing `gnome_subset = True`
     UW.gnome_bbox = [28.17,-95.53,30.0,-93.9]
 ```
 
-The probability map is a new feature in this version of HyosPy. The map shows the probability of the oil spill trajectory of one or multiple simulations. This function can be turned on by specifying `probability_map = True`. 
+The probability map is a new feature in this version of HyosPy and is only available for GNOME. The map shows the probability of the oil spill trajectory of one or multiple simulations. This function can be turned on by specifying `probability_map = True`. The parameter `google_earth` determines whether or not the probability map is imposed on Google Earth. If `google_earth=True`, a kml file will be created and a user can open the Google Earth software and visualize the result. Otherwise, when `google_earth=False`, the map is plotted by a python library, basemap. Note Google Earth requires high-performance of video card. Turning off the `google_earth` usually yields faster visualizations. 
+
+```python
+    ## Probability Map
+    UW.probability_map = True
+    UW.google_earth = False
+    UW.mpl = 8 # probability calculation time interval
+```
+
+Next step is to define the ensemble parameters, `number` and `interval`. The parameter `number` determines how many simulations you need and `interval` specifies the time interval between each simulation. `interval` has the unit of seconds and a default value of 10800. This is because the wind data is updated every 3 hours. 
+
+```python
+    ## ensemble parameters
+    UW.number = 1
+    UW.interval = 500 # units: seconds
+```
+
+
+
+
+
 
 
 
