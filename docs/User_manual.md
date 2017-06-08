@@ -84,9 +84,12 @@ The parameters for the GNOME simulation can be modified in the function `make_mo
 [oilspill_wrapper.py](https://github.com/UT-CWE/Hyospy/blob/Hyospy-develop/Hyospy_ensemble/oilspill_wrapper.py).  
 
 ```python
+    ## Oil spill model
     UW.runGNOME = True
     UW.runTracPy = False
 ```
+
+
 
 
 
