@@ -79,9 +79,9 @@ a new Python script something like:
 ```
 
 There are two drifter models (GNOME and TracPy) integrated in HyosPy. A user can run both or just one of them by specifying the
-parameters, `runGNOME` and `runTracPy`. Note GNOME is the primary oil spill model in our system, which means it has more funtions.
+parameters, `runGNOME` and `runTracPy`. Note GNOME is the primary oil spill model in our system, which means it has more funtions and is available for all three hydrodynamic model options.
 The parameters for the GNOME simulation can be modified in the function `make_model` in 
-[oilspill_wrapper.py](https://github.com/UT-CWE/Hyospy/blob/Hyospy-develop/Hyospy_ensemble/oilspill_wrapper.py).  
+[oilspill_wrapper.py](https://github.com/UT-CWE/Hyospy/blob/Hyospy-develop/Hyospy_ensemble/oilspill_wrapper.py). TracPy is compatiable with curvilinear grid and is only available for `ROMS` and `BLENDED` models.  
 
 ```python
     ## Oil spill model
@@ -89,6 +89,16 @@ The parameters for the GNOME simulation can be modified in the function `make_mo
     UW.runTracPy = False
 ```
 
+The grid for the blended model has a very high resolution with about 1000000 cells. GNOME runs slow on this grid. A user can
+choose to subset the grid for GNOME simulation by choosing `gnome_subset = True` and defining the subset domain. An example is given as
+
+```python
+    ## GNOME settings
+    UW.gnome_subset = True       # For blended current product, "subset=True" makes GNOME run faster
+    UW.gnome_bbox = [28.17,-95.53,30.0,-93.9]
+```
+
+The probability map is a new feature in this version of HyosPy. The map shows the probability of the oil spill trajectory of one or multiple simulations. This function can be turned on by specifying `probability_map = True`. 
 
 
 
