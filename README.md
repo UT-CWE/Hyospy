@@ -14,3 +14,9 @@ The new version of HyosPy has the following new features:
 4. A Probability map is added as another visualization tool.
 
 Please refer to the user guide in /docs for the installation and manual of HyosPy. 
+
+Contacts:
+
+fengdongyu@utexas.edu
+
+hodges@mail.utexas.edu
