@@ -98,7 +98,7 @@ choose to subset the grid for GNOME simulation by choosing `gnome_subset = True`
     UW.gnome_bbox = [28.17,-95.53,30.0,-93.9]
 ```
 
-The probability map is a new feature in this version of HyosPy and is only available for GNOME. The map shows the probability of the oil spill trajectory of one or multiple simulations. This function can be turned on by specifying `probability_map = True`. The parameter `google_earth` determines whether or not the probability map is imposed on Google Earth. If `google_earth=True`, a kml file will be created and a user can open the Google Earth software and visualize the result. Otherwise, when `google_earth=False`, the map is plotted by a python library, basemap. Note Google Earth requires high-performance of video card. Turning off the `google_earth` usually yields faster visualizations. 
+The probability map is a new feature in this version of HyosPy and is only available for GNOME. The map shows the probability of the oil spill trajectory of one or multiple simulations. This function can be turned on by specifying `probability_map = True`. The parameter `google_earth` determines whether or not the probability map will be imposed on Google Earth. If `google_earth=True`, a kml file will be created and a user can open the Google Earth software and visualize the result. Otherwise, when `google_earth=False`, the map is plotted by a python library, basemap. Note Google Earth requires high performance of the video card. Turning off the `google_earth` usually yields faster visualizations. `mpl` is the parameter that adjust the speed of generating the probability map. Increasing this number can accelerate the process but will lower the accurancy of the map. 
 
 ```python
     ## Probability Map
@@ -115,7 +115,21 @@ Next step is to define the ensemble parameters, `number` and `interval`. The par
     UW.interval = 500 # units: seconds
 ```
 
+The user is encouraged to modify the boundary and initial conditions for running the hydrodynamic model, SUNTANS. When `hydro_model` is set as `'SUNTANS'` or `'BLENDED'`, SUNTANS is a primary model in HyosPy. There are multiple choices for SUNTANS open boundary condition `OBC_opt`, while the most recommended one is `'ROMSFILE'`, that is, using salt and temperature from the outer ROMS model and surface elevation from the real-time observational data. In this situation,  `IC_opt` should be `'ROMS'`. This allows SUNTANS to use the existing coarse-resolution ROMS simulation as its initial condition. 
+However, if the ROMS output is not available and SUNTANS is the only hydrodynamic model, the user can always set `OBC_opt = 'file'`. This makes SUNTANS use the surface elevation from the observation only and the boundary tracers are 0. The initial condition is inherently constant, i.e. `IC_opt = 'constant'`. Below is an example. 
 
+```python
+    ## SUNTANS IC and BC
+    UW.OBC_opt = 'ROMSFILE'  # Type 3 boundary condition option: 'constant',
+    #'file','OTIS', 'ROMS', 'ROMSOTIS','ROMSFILE', 'ROMSOTISFILE'
+    UW.IC_opt = 'ROMS' # initial condition options: 'constant', 'ROMS'
+```
+
+Finally, as all the parameters are set, a user can call the `upper_wrapper` function to run the system. The initial spill location is assigned to the variable `init_latlon`. Note that if you choose SUNTANS as the only hydrodynamic model, the initial location has to be inside or close to the Galveston Bay, that is, in the SUNTANS domain, otherwise the oil spill model will raise an error. 
+
+```python
+UW(starttime, endtime, starttime2, period, init_latlon=[28.353786, -95.315109])  #ROMS domain
+```
 
 
 
