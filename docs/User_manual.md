@@ -1,4 +1,4 @@
-User manual for HyosPy
+Quick Start for HyosPy
 =====
 
 
