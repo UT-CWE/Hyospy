@@ -20,6 +20,7 @@ import urllib
 import time
 import tarfile
 from contextlib import closing
+from scipy import interpolate
 
 from othertime import SecondsSince
 from interpXYZ import interpXYZ
@@ -202,6 +203,7 @@ class TAMU_NCEP_wind(object):
                             self.air_u[nn,i] = amp*math.sin(angle*math.pi/180)
                             self.air_v[nn,i] = amp*math.cos(angle*math.pi/180)            
         
+    
         
     def windStations(self):
         """
@@ -306,6 +308,176 @@ class TAMU_NCEP_wind(object):
         
         print 'writing NCEP wind to SUNTANS wind file %s !!!\n'%outfile
         SUNTANS_wind(outfile, self.timei, self.lat, self.lon, self.air_u, self.air_v) 
+        
+
+    
+    def writeTracPy(self, outfile):
+        """
+        Save the wind data to the blended velocity file that TracPy can read
+        """
+        windage = 0.015        
+        
+        ## Step One: interpolate temporally
+        tinterp='linear'        
+        
+        filename = 'DATA/blended_uv.nc'
+        nc = Dataset(filename, 'r')
+        timei = nc.variables['ocean_time']
+        time = num2date(timei[:], timei.units)
+        nc.close()
+        
+        self.blendedGrid()
+        
+        # interpolate temporally
+        twind = SecondsSince(self.timei)
+        tout = SecondsSince(time)
+        
+        Ft = interpolate.interp1d(twind,self.air_u,axis=0,kind=tinterp,bounds_error=False)
+        uout = Ft(tout)        
+        Ft = interpolate.interp1d(twind,self.air_v,axis=0,kind=tinterp,bounds_error=False)
+        vout = Ft(tout)
+        
+        ## Step Two: interpolate spatially
+        xw = np.zeros_like(self.lon)
+        yw = np.zeros_like(self.lat)
+        for i in range(self.lon.shape[0]):
+            (yw[i],xw[i]) = utm.from_latlon(self.lat[i],self.lon[i])[0:2]
+            
+        xy_wind = np.vstack((xw.ravel(), yw.ravel())).T
+        xy_new = np.vstack((self.xss[(self.maskss==2)|(self.maskss==3)|(self.maskss==4)], \
+                                self.yss[(self.maskss==2)|(self.maskss==3)|(self.maskss==4)])).T    # blended grid        
+        Fuv = interpXYZ(xy_wind, xy_new, method='idw')
+        
+        ## SUNTANS subsetted region
+        uwind = np.zeros([len(tout), self.xss.shape[0], self.xss.shape[1]])
+        vwind = np.zeros([len(tout), self.xss.shape[0], self.xss.shape[1]])        
+        
+        for ii in range(len(tout)):        
+            uwind[ii,:,:][(self.maskss==2)|(self.maskss==3)|(self.maskss==4)] = Fuv(uout[ii,:])
+            vwind[ii,:,:][(self.maskss==2)|(self.maskss==3)|(self.maskss==4)] = Fuv(vout[ii,:])  
+           
+        ## eliminate nan value
+        uwind[np.isnan(uwind)] = 0.
+        vwind[np.isnan(vwind)] = 0.
+           
+        ## ROMS region
+        self.uwind = np.zeros([len(tout), self.lon_rho.shape[0], self.lon_rho.shape[1]])
+        self.vwind = np.zeros([len(tout), self.lon_rho.shape[0], self.lon_rho.shape[1]])
+        ## insert sub-domain wind
+        for ii in range(len(tout)):
+            self.uwind[ii,self.JJJ0:self.JJJ1,self.III0:self.III1][self.maskss==2] \
+            = uwind[ii,:,:][self.maskss==2] * windage
+            self.vwind[ii,self.JJJ0:self.JJJ1,self.III0:self.III1][self.maskss==2] \
+            = vwind[ii,:,:][self.maskss==2] * windage
+            
+            self.uwind[ii,self.JJJ0:self.JJJ1,self.III0:self.III1][self.maskss==3] \
+            = uwind[ii,:,:][self.maskss==3] * self.w_sun[self.maskss0==3] * windage
+            self.uwind[ii,self.JJJ0:self.JJJ1,self.III0:self.III1][self.maskss==4] \
+            = uwind[ii,:,:][self.maskss==4] * self.w_sun[self.maskss0==4] * windage            
+            
+            self.vwind[ii,self.JJJ0:self.JJJ1,self.III0:self.III1][self.maskss==3] \
+            = vwind[ii,:,:][self.maskss==3] * self.w_sun[self.maskss0==3] * windage
+            self.vwind[ii,self.JJJ0:self.JJJ1,self.III0:self.III1][self.maskss==4] \
+            = vwind[ii,:,:][self.maskss==4] * self.w_sun[self.maskss0==4] * windage
+         
+         
+#        #### Test Plotting ####
+#        ##
+#        from mpl_toolkits.basemap import Basemap
+#        import matplotlib.pyplot as plt
+#        south = 28.354505; west = -95.681857
+#        north = 29.871524; east = -93.891569
+#        basemap = Basemap(projection='merc',llcrnrlat=south,urcrnrlat=north, \
+#                llcrnrlon=west,urcrnrlon=east,resolution='i')
+#        ##
+##        basemap = Basemap(projection='merc',llcrnrlat=self.lat0.min(),urcrnrlat=self.lat0.max(), \
+##                llcrnrlon=self.lon0.min(),urcrnrlon=self.lon0.max(),resolution='i')
+#        fig1 = plt.figure()
+#        ax = fig1.add_subplot(111)
+#        basemap.drawcoastlines()
+#        basemap.fillcontinents()
+#        basemap.drawcountries()
+#        basemap.drawstates()
+#        x_rho, y_rho = basemap(self.lon_rho, self.lat_rho)
+#        
+#        basemap.pcolor(x_rho, y_rho, self.uwind[-1,:,:], vmin=-0.3,vmax=0.3) 
+#        plt.title('Blended velocity at time: %s...'%datetime.strftime(time[-1],'%Y-%m-%d %H:%M:%S'))
+#        plt.show()
+
+        ##generate the flow wind file
+        shutil.copyfile(filename, outfile)
+        
+        nc = Dataset(outfile, 'a')
+        nc.variables['u'] += self.uwind[:,:,:-1]
+        nc.variables['v'] += self.vwind[:,:-1,:]
+        nc.close()
+            
+                            
+        
+        
+        pdb.set_trace()
+        
+        
+    
+    def blendedGrid(self):
+        """
+        read blended grid
+        """
+        nc = Dataset('DATA/blended_grid_new.nc', 'r') 
+        #print nc
+        
+        lon = nc.variables['lon_rho'][:]
+        lat = nc.variables['lat_rho'][:]
+        mask = nc.variables['mask_rho'][:]
+        x_bg = np.zeros_like(lon)
+        y_bg = np.zeros_like(lat)
+        for i in range(lon.shape[0]):
+            for j in range(lon.shape[1]):
+                (y_bg[i,j],x_bg[i,j])=utm.from_latlon(lat[i,j],lon[i,j])[0:2]
+        
+        #### subset Blend_grid for interpolation ####
+        def findNearset(x,y,lon,lat):
+            """
+            Return the J,I indices of the nearst grid cell to x,y
+            """
+                        
+            dist = np.sqrt( (lon - x)**2 + (lat - y)**2)
+            
+            return np.argwhere(dist==dist.min())
+
+        #### Step 1) subset for SUNTANS interpolation
+        NE = (29.868007, -94.175217) 
+        SW = (28.361303, -95.073081) 
+        
+        #### searching for the index of the subset domain for interpolation
+        ind = findNearset(SW[1], SW[0], lon, lat)
+        J0=ind[0][0] 
+        I0=ind[0][1] 
+        
+        ind = findNearset(NE[1], NE[0], lon, lat)
+        J1=ind[0][0] +22 #-2
+        I1=ind[0][1]
+        
+        self.yss = y_bg[J0:J1,I0:I1]  ##subset x,y
+        self.xss = x_bg[J0:J1,I0:I1]
+        self.maskss = mask[J0:J1,I0:I1] 
+        
+        self.lon_rho = lon
+        self.lat_rho = lat
+        self.maskss0 = mask
+        
+        self.JJJ0 = J0
+        self.JJJ1 = J1
+        
+        self.III0 = I0
+        self.III1 = I1 
+        
+        ## Read weight variables ##
+        nc_w = Dataset('DATA/weights.nc', 'r')
+        self.w_sun = nc_w.variables['w_sun'][:]
+        self.w_roms = nc_w.variables['w_roms'][:]
+        nc_w.close()
+        
         
 
 
@@ -572,7 +744,12 @@ class SUNTANS_wind(object):
         nc.close()
     
 
-        
+#### For testing only
+if __name__ == "__main__":
+    GNOME_dir = "GNOME"
+    subset_wind = True
+    TNW = TAMU_NCEP_wind(subset_wind)
+    TNW.writeTracPy('DATA/flow_wind.nc')
         
         
         
