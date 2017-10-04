@@ -1,0 +1,37 @@
+#!/bin/sh
+
+oldyear="SampleCase"
+timelength="1week"
+rundata="rundata"
+sl="_"
+subdir="SUNTANS"
+
+export LD_LIBRARY_PATH=/usr/local/lib:/home/dongyu/Documents/App/hdf5-1.8.12/hdf5/lib
+
+newdir=$subdir/${rundata}
+olddir=$subdir/${oldyear}
+
+echo Older task ...
+echo $olddir
+echo New task ...
+echo $newdir
+
+mkdir $newdir
+
+#copy data
+cp $olddir/*.dat $newdir
+cp $olddir/depths.dat-voro $newdir
+cp DATA/NCEP.nc $newdir
+
+#create the plotdir under the directory of plots
+plotname="inputs"
+plotdir=${plotname}
+
+if [ -d $subdir/plots/$plotdir ]; then
+   echo " already exists"
+   rm -rf /$subdir/plots/$plotdir
+   exit 0
+else
+   mkdir $subdir/plots/$plotdir
+fi
+

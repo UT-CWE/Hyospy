@@ -1,0 +1,10 @@
+Suite of python tools for pre- and post-processing 
+numerical model data
+
+Created: October 2012
+Matt Rayson
+Stanford University
+
+For more details, please refer to https://github.com/ofringer/suntanspy
+
+Note: a few changes are made in multiple files to make the scripts compatible with Hyospy settings. 
