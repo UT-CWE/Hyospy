@@ -14,6 +14,8 @@ import urllib2
 import netcdfio
 import string
 
+import pdb
+
 
 def getUSGSnwis(stationids,starttime,endtime,ncfile):
     """
@@ -31,8 +33,10 @@ def getUSGSnwis(stationids,starttime,endtime,ncfile):
     for sid in stationids:
         meta = readUSGSmeta(sid,meta=meta)
         tt,dd = readUSGStxt(sid,starttime,endtime)
+	dd[dd<-3]=0. ## delete wrong large negative inflows
         time.append(tt)
         discharge.append(dd)
+	#pdb.set_trace()
        
     USGS2netcdf(ncfile,meta,time,discharge)
     
